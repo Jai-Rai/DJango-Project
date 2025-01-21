@@ -31,6 +31,11 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "Inventory.apps.InventoryConfig",
+    "Sales.apps.SalesConfig",
+    "Procurement.apps.ProcurementConfig",
+    "HR.apps.HRConfig",
+    "Finance.FinanceConfig"
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
