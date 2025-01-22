@@ -7,7 +7,7 @@ class Department(models.Model):
     DepartmentName = models.CharField(max_length=200)
     ManagerId = models.OneToOneField(
         Staff,
-        on_delete=models.DO_NOTHING,
-        primary_key=True,
+        on_delete=models.SET_NULL,
+        null=True
     )
     Budget = models.IntegerField()

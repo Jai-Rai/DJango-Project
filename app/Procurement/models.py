@@ -17,4 +17,4 @@ class PurchaseOrder(models.Model):
     ProductId = models.ForeignKey(Product, on_delete=models.CASCADE)
     OrderDate = models.DateField(auto_now_add=True)
     DeliveryDate = models.DateField()
-    OrderStatus = models.CharField()
+    OrderStatus = models.CharField(max_length=200)

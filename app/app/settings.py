@@ -34,8 +34,8 @@ INSTALLED_APPS = [
     "Inventory.apps.InventoryConfig",
     "Sales.apps.SalesConfig",
     "Procurement.apps.ProcurementConfig",
-    "HR.apps.HRConfig",
-    "Finance.FinanceConfig"
+    "HR.apps.HrConfig",
+    "Finance.apps.FinanceConfig",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
