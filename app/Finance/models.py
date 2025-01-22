@@ -1,18 +1,13 @@
 from django.db import models
-from Sales.models import *
-from HR.models import *
-from Inventory.models import *
-from Procurement.models import *
+from HR.models import Staff
 
 
-class Store(models.Model):
-    StoreId = models.AutoField(primary_key=True, unique=True)
-    name = models.CharField(max_length=200)
-    location = models.CharField(max_length=200)
-    contact_number = models.CharField(max_length=15)
+class Department(models.Model):
+    DepartmentId = models.AutoField(primary_key=True, unique=True)
+    DepartmentName = models.CharField(max_length=200)
     ManagerId = models.OneToOneField(
-        Employee,
-        unique=True,
+        Staff,
         on_delete=models.DO_NOTHING,
         primary_key=True,
     )
+    Budget = models.IntegerField()

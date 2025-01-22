@@ -7,23 +7,29 @@ from Procurement.models import *
 
 class Product(models.Model):
     ProductId = models.AutoField(primary_key=True, unique=True)
-    name = models.CharField(max_length=200)
-    category = models.CharField(max_length=100)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    stock_level = models.IntegerField()
-    reorder_level = models.IntegerField()
-    last_purchase_date = models.DateField(null=True, blank=True)
+    ProductName = models.CharField(max_length=200)
+    Category = models.CharField(max_length=100)
+    Price = models.DecimalField(max_digits=10, decimal_places=2)
+    StockLevel = models.IntegerField()
+    ReorderLevel = models.IntegerField()
+    LastPurchaseDate = models.DateField(null=True, blank=True)
+    SupplierId = models.ForeignKey(
+        Supplier,
+        null=True,
+        on_delete=models.SET_NULL,
+        primary_key=True,
+    )
 
 
 class Store(models.Model):
     StoreId = models.AutoField(primary_key=True, unique=True)
     StoreName = models.CharField(max_length=200)
-    location = models.CharField(max_length=200)
+    Location = models.CharField(max_length=200)
     ContactNumber = models.CharField(max_length=15)
     ManagerId = models.OneToOneField(
-        Employee,
-        unique=True,
-        on_delete=models.DO_NOTHING,
+        Staff,
+        null=True,
+        on_delete=models.SET_NULL,
         primary_key=True,
     )
     TotalSales = models.IntegerField()
@@ -32,6 +38,6 @@ class Store(models.Model):
 
 class StockLocation(models.Model):
     StockLocationId = models.ForeignKey(Product, on_delete=models.CASCADE)
-    warehouse = models.ForeignKey(Store, on_delete=models.CASCADE)
-    quantity = models.IntegerField()
-    date = models.DateTimeField(auto_now_add=True)
+    StoreId = models.ForeignKey(Store, on_delete=models.CASCADE)
+    Quantity = models.IntegerField()
+    Date = models.DateTimeField(auto_now_add=True)
