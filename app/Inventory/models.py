@@ -19,26 +19,62 @@ class Product(models.Model):
         on_delete=models.SET_NULL,
     )
 
-    def GetStocklevel(self):
-        return self.stock_amount
-
-    def SetReorderLevel(self, NewLevel):
-        """Sets new reorder level"""
-        if NewLevel is int:
-            self.order_limit = NewLevel
-            return True
-        return False
-
-    def TransferStock(self, StoreId, quantity):
-        StockLocation.objects.create(
-            Product=self,
-            StoretoreId=StoreId,
-            Quantity=quantity,
-            Date=models.DateField(auto_now=True),
+    def __str__(self):
+        return (
+            f"{self.ProductName} - Level:{self.StockLevel} Order at:{self.ReorderLevel}"
         )
 
-    def __str__(self):
-        return f"{self.ProductName} - Level:{self.StockLevel} Order at:{self.ReorderLevel}"
+    def GetAllStores(self):
+        """
+        Returns all stores that stock this product.
+        """
+        return self.stocklocation_set.values("StoreId__StoreName", "StoreId__Location")
+
+    def GetStockLevel(self):
+        """
+        Returns the total stock level for this product across all stores.
+        """
+        return (
+            self.stocklocation_set.aggregate(TotalStock=Sum("Quantity"))["TotalStock"]
+            or 0
+        )
+
+    def TransferStock(self, from_store, to_store, quantity):
+        """
+        Transfers stock of this product between stores.
+        :param from_store: Store instance to transfer from.
+        :param to_store: Store instance to transfer to.
+        :param quantity: Quantity of stock to transfer.
+        """
+        if quantity <= 0:
+            raise ValueError("Quantity must be greater than zero.")
+
+        from_stock = self.stocklocation_set.filter(StoreId=from_store).first()
+        to_stock = self.stocklocation_set.filter(StoreId=to_store).first()
+
+        if not from_stock or from_stock.Quantity < quantity:
+            raise ValidationError("Insufficient stock in the source store.")
+
+        from_stock.Quantity -= quantity
+        from_stock.save()
+
+        if to_stock:
+            to_stock.Quantity += quantity
+        else:
+            StockLocation.objects.create(
+                ProductId=self, StoreId=to_store, Quantity=quantity
+            )
+        to_stock.save()
+
+    def EditReorderLevel(self, new_reorder_level):
+        """
+        Updates the reorder level for this product.
+        :param new_reorder_level: New reorder level (integer).
+        """
+        if new_reorder_level < 0:
+            raise ValueError("Reorder level must be a non-negative integer.")
+        self.ReorderLevel = new_reorder_level
+        self.save()
 
 
 class Store(models.Model):
@@ -54,113 +90,81 @@ class Store(models.Model):
     TotalSales = models.IntegerField()
     OperatingHours = models.IntegerField()
 
-    def get_all_products(self):
-        """
-        Retrieves all products associated with this store.
-        Returns QuerySet of products with their details.
-        """
-        try:
-            # try getting all products with this stores id
-            return (
-                StockLocation.objects.filter(StoreId = '')
-            )
-        except Exception as e:
-            raise ValueError(f"Error retrieving products: {str(e)}")
-        
-        
-
-    def view_store_performance(self, date_range=30):
-        """
-        Analyzes store performance metrics over a specified period.
-        Args:
-            date_range (int): Number of days to analyze (default: 30)
-        Returns:
-            dict: Performance metrics including sales, average daily revenue, etc.
-        """
-        try:
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=date_range)
-
-            # Assuming you have an Order/Sale model with appropriate relations
-            sales_data = self.dd.filter(
-                date__range=[start_date, end_date]
-            ).aaggregate(
-                total_sales=Sum("total_amount"),
-                average_daily_sales=Avg("total_amount"),
-                total_orders=models.Count("id"),
-            )
-
-            # Calculate additional metrics
-            performance_metrics = {
-                "period_total_sales": sales_data["total_sales"] or 0,
-                "average_daily_sales": sales_data["average_daily_sales"] or 0,
-                "total_orders": sales_data["total_orders"] or 0,
-                "store_efficiency": (sales_data["total_sales"] or 0)
-                / self.OperatingHours,
-                "sales_per_hour": (sales_data["total_sales"] or 0)
-                / (self.OperatingHours * date_range),
-            }
-
-            return performance_metrics
-
-        except Exception as e:
-            raise ValueError(f"Error calculating store performance: {str(e)}")
-
-    def edit_store_data(self, **kwargs):
-        """
-        Updates store information with provided data.
-        Args:
-            **kwargs: Dictionary of fields to update and their new values
-        Returns:
-            bool: True if update successful, raises exception otherwise
-        """
-        try:
-            valid_fields = {
-                "StoreName",
-                "Location",
-                "ContactNumber",
-                "ManagerId",
-                "OperatingHours",
-            }
-            # Filter out invalid fields
-            update_data = {k: v for k, v in kwargs.items() if k in valid_fields}
-            if not update_data:
-                raise ValidationError("No valid fields provided for update")
-
-            # Validate contact number format if it's being updated
-            if "ContactNumber" in update_data:
-                if not update_data["ContactNumber"].replace("+", "").isdigit():
-                    raise ValidationError("Invalid contact number format")
-
-            # Validate operating hours if being updated
-            if "OperatingHours" in update_data:
-                if not 0 < update_data["OperatingHours"] <= 24:
-                    raise ValidationError("Operating hours must be between 1 and 24")
-
-            # Update the fields
-            for field, value in update_data.items():
-                setattr(self, field, value)
-            self.full_clean()  # Validate all fields
-            self.save()
-            return True
-
-        except ValidationError as ve:
-            raise ValidationError(f"Validation error: {str(ve)}")
-        except Exception as e:
-            raise ValueError(f"Error updating store data: {str(e)}")
-
     def __str__(self):
         return f"{self.StoreName} - {self.Location}"
+
+    def GetAllProducts(self):
+        """
+        Returns all products stocked in this store.
+        """
+        return self.stocklocation_set.values("ProductId__ProductName", "Quantity")
+
+    def ViewStorePerformance(self):
+        """
+        Returns the store's performance metrics.
+        """
+        return {
+            "TotalSales": self.TotalSales,
+            "AverageSalesPerHour": (
+                self.TotalSales / self.OperatingHours if self.OperatingHours else 0
+            ),
+        }
+
+    def EditStoreData(self, StoreName=None, Location=None, ContactNumber=None):
+        """
+        Updates the store's data.
+        """
+        if StoreName:
+            self.StoreName = StoreName
+        if Location:
+            self.Location = Location
+        if ContactNumber:
+            self.ContactNumber = ContactNumber
+        self.save()
 
 
 class StockLocation(models.Model):
     StockLocationId = models.AutoField(primary_key=True, unique=True)
-    ProductId = models.ForeignKey(Product, on_delete=models.CASCADE)
-    StoreId = models.ForeignKey(Store, on_delete=models.CASCADE)
+    ProductId = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="stocklocation_set"
+    )
+    StoreId = models.ForeignKey(
+        Store, on_delete=models.CASCADE, related_name="stocklocation_set"
+    )
     Quantity = models.IntegerField()
     Date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return (
-            f"{self.ProductId.ProductName} - {self.StoreId.StoreName} - Amount: {self.Quantity}"
+        return f"{self.ProductId.ProductName} - {self.StoreId.StoreName} - Amount: {self.Quantity}"
+
+    def AdjustStock(self, quantity):
+        """
+        Adjusts the stock quantity for this stock location.
+        :param quantity: Positive to increase stock, negative to decrease stock.
+        """
+        if self.Quantity + quantity < 0:
+            raise ValidationError("Insufficient stock for the operation.")
+        self.Quantity += quantity
+        self.save()
+
+    def TransferStock(self, to_store, quantity):
+        """
+        Transfers stock from this location to another store.
+        :param to_store: Store instance to transfer stock to.
+        :param quantity: Quantity to transfer.
+        """
+        if quantity <= 0:
+            raise ValueError("Transfer quantity must be positive.")
+
+        if self.Quantity < quantity:
+            raise ValidationError("Insufficient stock for transfer.")
+
+        self.Quantity -= quantity
+        self.save()
+
+        to_stock_location, created = StockLocation.objects.get_or_create(
+            ProductId=self.ProductId, StoreId=to_store, defaults={"Quantity": 0}
         )
+
+        to_stock_location.Quantity += quantity
+        to_stock_location.save()
