@@ -57,7 +57,7 @@ class Facade():
             return f"Error triggering purchase order: {str(e)}"
 
 
-    def GetSalesPerformanceGraph(self, start_date=None, end_date=None):
+    def GetSalesPerformance(self, start_date=None, end_date=None):
         """
         Retrieves sales data for graphing performance by stores and products over time.
         :param start_date: Optional start date for filtering sales (datetime.date).

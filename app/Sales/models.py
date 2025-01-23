@@ -7,7 +7,7 @@ class Sales(models.Model):
     PaymentMethod = models.CharField(max_length=200)
     TotalAmount = models.DecimalField(max_digits=15, decimal_places=2)  
     StoreId = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='sales')
-    ProductId = models.ForeignKey(Product, on_delete=models.SET_NULL, related_name='sales')
+    ProductId = models.ForeignKey(Product, on_delete=models.SET_NULL, related_name='sales', null=True)
     StaffId = models.ForeignKey(
         Staff,
         on_delete=models.SET_NULL,
