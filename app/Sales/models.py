@@ -1,5 +1,5 @@
 from django.db import models
-from Inventory.models import Store
+from Inventory.models import Store, Product
 from HR.models import Staff
 
 class Sales(models.Model):
@@ -7,6 +7,7 @@ class Sales(models.Model):
     PaymentMethod = models.CharField(max_length=200)
     TotalAmount = models.DecimalField(max_digits=15, decimal_places=2)  
     StoreId = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='sales')
+    ProductId = models.ForeignKey(Product, on_delete=models.SET_NULL, related_name='sales')
     StaffId = models.ForeignKey(
         Staff,
         on_delete=models.SET_NULL,

@@ -177,25 +177,3 @@ class StockLocation(models.Model):
             raise ValidationError("Insufficient stock for the operation.")
         self.Quantity += quantity
         self.save()
-
-    def TransferStock(self, to_store, quantity):
-        """
-        Transfers stock from this location to another store.
-        to_store: Store instance to transfer stock to.
-        quantity: Quantity to transfer.
-        """
-        if quantity <= 0:
-            raise ValueError("Transfer quantity must be positive.")
-
-        if self.Quantity < quantity:
-            raise ValidationError("Insufficient stock for transfer.")
-
-        self.Quantity -= quantity
-        self.save()
-
-        to_stock_location = StockLocation.objects.get_or_create(
-            ProductId=self.ProductId, StoreId=to_store, defaults={"Quantity": 0}
-        )
-
-        to_stock_location.Quantity += quantity
-        to_stock_location.save()

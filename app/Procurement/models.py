@@ -62,7 +62,7 @@ class PurchaseOrder(models.Model):
     TotalAmount = models.DecimalField(max_digits=10, decimal_places=2)
     ProductId = models.ForeignKey(Product, on_delete=models.CASCADE)
     OrderDate = models.DateField(auto_now_add=True)
-    DeliveryDate = models.DateField()
+    DeliveryDate = models.DateField(blank=True, null=True)
     OrderStatus = models.CharField(max_length=200)
 
     def __str__(self):
