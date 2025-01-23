@@ -8,5 +8,12 @@ class Sales(models.Model):
     PaymentMethod = models.CharField(max_length=200)
     TotalAmount = models.CharField(max_length=15)
     StoreId = models.ForeignKey(Store, on_delete=models.CASCADE)
-    StaffId = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True)
+    StaffId = models.ForeignKey(
+        Staff,
+        on_delete=models.SET_NULL,
+        null=True,
+    )
     DateOfSale = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Id:{self.SalesId} - Total:{self.TotalAmount} - Store:{self.StoreId.StoreName}"
