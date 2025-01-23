@@ -15,7 +15,7 @@ class Product(models.Model):
     SupplierId = models.ForeignKey(
         "Procurement.Supplier",
         null=True,
-        related_name="Supplier",
+        related_name="products",
         on_delete=models.SET_NULL,
     )
 
@@ -66,6 +66,8 @@ class Store(models.Model):
             )
         except Exception as e:
             raise ValueError(f"Error retrieving products: {str(e)}")
+        
+        
 
     def view_store_performance(self, date_range=30):
         """
