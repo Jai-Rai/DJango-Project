@@ -15,6 +15,7 @@ class Product(models.Model):
     SupplierId = models.ForeignKey(
         "Procurement.Supplier",
         null=True,
+        related_name="Supplier",
         on_delete=models.SET_NULL,
     )
 
