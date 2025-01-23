@@ -5,12 +5,13 @@ from HR.models import Staff
 class Sales(models.Model):
     SalesId = models.AutoField(primary_key=True, unique=True)
     PaymentMethod = models.CharField(max_length=200)
-    TotalAmount = models.DecimalField(max_digits=15, decimal_places=2)  # Changed to DecimalField for accuracy
+    TotalAmount = models.DecimalField(max_digits=15, decimal_places=2)  
     StoreId = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='sales')
     StaffId = models.ForeignKey(
         Staff,
         on_delete=models.SET_NULL,
         null=True,
+        related_name='sales'
     )
     DateOfSale = models.DateField(auto_now_add=True)
 
@@ -33,8 +34,8 @@ class Sales(models.Model):
     def GetSalesGraph(self, start_date=None, end_date=None):
         """
         Generates sales data for a graph based on the given date range.
-        :param start_date: Optional start date for filtering sales (datetime.date).
-        :param end_date: Optional end date for filtering sales (datetime.date).
+        start_date: Optional start date for filtering sales (datetime.date).
+        end_date: Optional end date for filtering sales (datetime.date).
         """
         from django.db.models import Sum
         sales_queryset = Sales.objects.all()
@@ -56,8 +57,8 @@ class Sales(models.Model):
     def CalculateTotalSales(self, start_date=None, end_date=None):
         """
         Calculates the total sales amount within the specified date range.
-        :param start_date: Optional start date for filtering sales (datetime.date).
-        :param end_date: Optional end date for filtering sales (datetime.date).
+        start_date: Optional start date for filtering sales (datetime.date).
+        end_date: Optional end date for filtering sales (datetime.date).
         """
         from django.db.models import Sum
         sales_queryset = Sales.objects.all()

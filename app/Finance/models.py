@@ -4,7 +4,7 @@ class Department(models.Model):
     DepartmentId = models.AutoField(primary_key=True, unique=True)
     DepartmentName = models.CharField(max_length=200)
     ManagerId = models.OneToOneField(
-        "HR.Staff", on_delete=models.SET_NULL, null=True, blank=True
+        "HR.Staff", on_delete=models.SET_NULL, null=True, blank=True, related_name="department"
     )
     Budget = models.IntegerField()
 
@@ -22,7 +22,7 @@ class Department(models.Model):
     def SetDepartmentBudget(self, budget):
         """
         Sets a new budget for the department.
-        :param budget: New budget value (integer).
+        budget: New budget value (integer).
         """
         if isinstance(budget, int) and budget >= 0:
             self.Budget = budget

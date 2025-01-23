@@ -42,15 +42,15 @@ class Product(models.Model):
     def TransferStock(self, from_store, to_store, quantity):
         """
         Transfers stock of this product between stores.
-        :param from_store: Store instance to transfer from.
-        :param to_store: Store instance to transfer to.
-        :param quantity: Quantity of stock to transfer.
+        from_store: Store instance to transfer from.
+        to_store: Store instance to transfer to.
+        quantity: Quantity of stock to transfer.
         """
         if quantity <= 0:
             raise ValueError("Quantity must be greater than zero.")
 
-        from_stock = self.stocklocation_set.filter(StoreId=from_store).first()
-        to_stock = self.stocklocation_set.filter(StoreId=to_store).first()
+        from_stock = self.stocklocation.filter(StoreId=from_store).first()
+        to_stock = self.stocklocation.filter(StoreId=to_store).first()
 
         if not from_stock or from_stock.Quantity < quantity:
             raise ValidationError("Insufficient stock in the source store.")
@@ -69,7 +69,7 @@ class Product(models.Model):
     def EditReorderLevel(self, new_reorder_level):
         """
         Updates the reorder level for this product.
-        :param new_reorder_level: New reorder level (integer).
+        new_reorder_level: New reorder level (integer).
         """
         if new_reorder_level < 0:
             raise ValueError("Reorder level must be a non-negative integer.")
@@ -110,26 +110,57 @@ class Store(models.Model):
             ),
         }
 
-    def EditStoreData(self, StoreName=None, Location=None, ContactNumber=None):
+    def edit_store_data(self, **kwargs):
         """
-        Updates the store's data.
+        Updates store information with provided data.
+        Args:
+            **kwargs: Dictionary of fields to update and their new values
+        Returns:
+            bool: True if update successful, raises exception otherwise
         """
-        if StoreName:
-            self.StoreName = StoreName
-        if Location:
-            self.Location = Location
-        if ContactNumber:
-            self.ContactNumber = ContactNumber
-        self.save()
+        try:
+            valid_fields = {
+                "StoreName",
+                "Location",
+                "ContactNumber",
+                "ManagerId",
+                "OperatingHours",
+            }
+            # Filter out invalid fields
+            update_data = {k: v for k, v in kwargs.items() if k in valid_fields}
+            if not update_data:
+                raise ValidationError("No valid fields provided for update")
+
+            # Validate contact number format if it's being updated
+            if "ContactNumber" in update_data:
+                if not update_data["ContactNumber"].replace("+", "").isdigit():
+                    raise ValidationError("Invalid contact number format")
+
+            # Validate operating hours if being updated
+            if "OperatingHours" in update_data:
+                if not 0 < update_data["OperatingHours"] <= 24:
+                    raise ValidationError("Operating hours must be between 1 and 24")
+
+            # Update the fields
+            for field, value in update_data.items():
+                setattr(self, field, value)
+            self.full_clean()  # Validate all fields
+            self.save()
+            return True
+
+        except ValidationError as ve:
+            raise ValidationError(f"Validation error: {str(ve)}")
+        except Exception as e:
+            raise ValueError(f"Error updating store data: {str(e)}")
 
 
 class StockLocation(models.Model):
     StockLocationId = models.AutoField(primary_key=True, unique=True)
     ProductId = models.ForeignKey(
-        Product, on_delete=models.CASCADE, related_name="stocklocation_set"
+        Product, on_delete=models.CASCADE, related_name="stocklocation"
     )
     StoreId = models.ForeignKey(
-        Store, on_delete=models.CASCADE, related_name="stocklocation_set"
+        Store, on_delete=models.CASCADE, related_name="stocklocation"
     )
     Quantity = models.IntegerField()
     Date = models.DateTimeField(auto_now_add=True)
@@ -140,7 +171,7 @@ class StockLocation(models.Model):
     def AdjustStock(self, quantity):
         """
         Adjusts the stock quantity for this stock location.
-        :param quantity: Positive to increase stock, negative to decrease stock.
+        quantity: Positive to increase stock, negative to decrease stock.
         """
         if self.Quantity + quantity < 0:
             raise ValidationError("Insufficient stock for the operation.")
@@ -150,8 +181,8 @@ class StockLocation(models.Model):
     def TransferStock(self, to_store, quantity):
         """
         Transfers stock from this location to another store.
-        :param to_store: Store instance to transfer stock to.
-        :param quantity: Quantity to transfer.
+        to_store: Store instance to transfer stock to.
+        quantity: Quantity to transfer.
         """
         if quantity <= 0:
             raise ValueError("Transfer quantity must be positive.")
@@ -162,7 +193,7 @@ class StockLocation(models.Model):
         self.Quantity -= quantity
         self.save()
 
-        to_stock_location, created = StockLocation.objects.get_or_create(
+        to_stock_location = StockLocation.objects.get_or_create(
             ProductId=self.ProductId, StoreId=to_store, defaults={"Quantity": 0}
         )
 
