@@ -35,4 +35,4 @@ class Department(models.Model):
         Returns all staff members belonging to the department.
         Assumes there is a related_name 'staff' set for the ForeignKey in the Staff model.
         """
-        return self.staff.all()  # Ensure related_name='staff' is set in the ForeignKey in the Staff model.
+        return self.staff.all()  
