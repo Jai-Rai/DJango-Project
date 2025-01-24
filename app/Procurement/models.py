@@ -59,7 +59,7 @@ class Supplier(models.Model):
 
 class PurchaseOrder(models.Model):
     PurchaseOrderId = models.AutoField(primary_key=True, unique=True)
-    TotalAmount = models.DecimalField(max_digits=10, decimal_places=2)
+    TotalAmount = models.IntegerField()
     ProductId = models.ForeignKey(Product, on_delete=models.CASCADE)
     OrderDate = models.DateField(auto_now_add=True)
     DeliveryDate = models.DateField(blank=True, null=True)
